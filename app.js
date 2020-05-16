@@ -58,6 +58,23 @@ var budgetController = (function(){
             return newItem;
         },
         
+        deleteItem: function(type, id) {
+            var ids, index;
+            
+            //loop for the id with method map
+            var ids = data.allItems[type].map(function(current) {
+                //the difference between map and foreach is that map returns a new array
+                return current.id;
+            });
+            
+            index = ids.indexOf(id);
+            
+            if(index !== -1) {
+                //remove items starting at 'index', 1 item
+                data.allItems[type].splice(index, 1);
+            }
+        },
+        
         calculateBudget: function() {
             //calculate total income and expenses
             calculateTotal('exp');
@@ -103,7 +120,8 @@ var UIController = (function(){
         budgetLabel: ".budget__value",
         incomeLabel: ".budget__income--value",
         expensesLabel: ".budget__expenses--value",
-        percentageLabel: ".budget__expenses--percentage"
+        percentageLabel: ".budget__expenses--percentage",
+        container: '.container'
     }
     //public methods
     return {
@@ -121,10 +139,10 @@ var UIController = (function(){
             //create html string with placeholder text
             if(type === "inc") {
                 element = DOMstrings.incomeContainer;
-                html = '<div class="item clearfix" id="income-%id%"> <div class="item__description">%description%</div> <div class="right clearfix"> <div class="item__value">%value%</div> <div class="item__delete"> <button class="item__delete--btn"> <i class="ion-ios-close-outline"></i> </button> </div> </div> </div>';
+                html = '<div class="item clearfix" id="inc-%id%"> <div class="item__description">%description%</div> <div class="right clearfix"> <div class="item__value">%value%</div> <div class="item__delete"> <button class="item__delete--btn"> <i class="ion-ios-close-outline"></i> </button> </div> </div> </div>';
             } else if(type === "exp") {
                 element = DOMstrings.expensesContainer;
-                html = '<div class="item clearfix" id="expense-%id%"><div class="item__description">%description%</div><div class="right clearfix"><div class="item__value">%value%</div><div class="item__percentage">21%</div><div class="item__delete"><button class="item__delete--btn"><i class="ion-ios-close-outline"></i></button></div></div></div>'
+                html = '<div class="item clearfix" id="exp-%id%"><div class="item__description">%description%</div><div class="right clearfix"><div class="item__value">%value%</div><div class="item__percentage">21%</div><div class="item__delete"><button class="item__delete--btn"><i class="ion-ios-close-outline"></i></button></div></div></div>'
             };
             
             //replace the placeholder text with some actual data
@@ -134,6 +152,12 @@ var UIController = (function(){
             
             //insert html to the DOM, beforeend is the last one of the list in html
             document.querySelector(element).insertAdjacentHTML('beforeend', newHtml);
+        },
+        
+        deleteListItem: function(selectorId) {
+            //we can only remove a child, that is why we need to call parentNode method first
+            var el = document.getElementById(selectorId);
+            el.parentNode.removeChild(el);
         },
         
         clearFields: function() {
@@ -191,6 +215,8 @@ var controller = (function(budgetCtrl, UICtrl) {
 			 ctrlAddItem();
 		  }
 	   })
+        
+        document.querySelector(DOM.container).addEventListener('click', ctrlDeleteItem);
     };
     
     var updateBudget = function() {
@@ -202,6 +228,7 @@ var controller = (function(budgetCtrl, UICtrl) {
         UICtrl.displayBudget(budget);
     };
     
+    //add item button
     var ctrlAddItem = function() {
         var input, newItem;
         //1. Get the field input data
@@ -217,6 +244,26 @@ var controller = (function(budgetCtrl, UICtrl) {
             //5. Calculate and update budget
             updateBudget();
         };
+    };
+    
+    //delete item button
+    var ctrlDeleteItem = function(event) {
+        var itemId, splitId, type, Id;
+        itemId = event.target.parentNode.parentNode.parentNode.parentNode.id;
+        
+        if(itemId) {
+            //split the ID with the - 
+            splitId = itemId.split('-');
+            type = splitId[0];
+            ID = parseInt(splitId[1]);
+            
+            //1. delete the item from data structure
+            budgetCtrl.deleteItem(type, ID);
+            //2. delete item from UI
+            UICtrl.deleteListItem(itemId);
+            //3. update and show new budget
+            updateBudget();
+        }
     };
     
     //create init function and make it public by returning it
